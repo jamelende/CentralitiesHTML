@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Centrality Explorer — Dolphins Network</title>
+<script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: white;
+    color: #111;
+  }
+  .wrap {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    height: 100vh;
+  }
+  .panel {
+    padding: 16px;
+    border-right: 1px solid #ddd;
+    background: #f9f9f9;
+  }
+  h1 { font-size: 18px; margin: 0 0 10px 0; }
+  label { display:block; margin-top: 12px; font-weight: bold; }
+  #cy { height: 100vh; width: 100%; }
+  select, input[type=range] { width: 100%; }
+  #legend {
+    margin-top: 12px;
+    height: 16px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+  }
+  .legend-labels { display:flex; justify-content:space-between; font-size:11px; color:#555; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="panel">
+    <h1>Centrality Explorer</h1>
+    <label>Metric</label>
+    <select id="metric">
+      <option value="degree">Degree</option>
+      <option value="betweenness">Betweenness</option>
+      <option value="closeness">Closeness</option>
+    </select>
+    <label>Node size scale</label>
+    <input id="sizeScale" type="range" min="6" max="48" value="26" />
+    <label>Color intensity</label>
+    <input id="colorIntensity" type="range" min="0" max="100" value="100" />
+    <div id="legend"></div>
+    <div class="legend-labels"><span id="minLabel">min</span><span id="maxLabel">max</span></div>
+    <p>Nodes: <span id="nNodes"></span> — Edges: <span id="nEdges"></span></p>
+  </div>
+  <div id="cy"></div>
+</div>
+
+<script>
+  const data = {"nodes": [{"data": {"id": "Beak", "label": "Beak", "degree": 0.09836065573770492, "betweenness": 0.01908259621374376, "closeness": 0.3465909090909091}, "position": {"x": -72.84663016053086, "y": -126.6754689052191}}, {"data": {"id": "Beescratch", "label": "Beescratch", "degree": 0.13114754098360656, "betweenness": 0.21332443553281097, "closeness": 0.3719512195121951}, "position": {"x": 204.9550094648533, "y": 136.54529696699953}}, {"data": {"id": "Bumper", "label": "Bumper", "degree": 0.06557377049180328, "betweenness": 0.00907281243346817, "closeness": 0.2824074074074074}, "position": {"x": -17.280950442442204, "y": -295.1095568070678}}, {"data": {"id": "CCL", "label": "CCL", "degree": 0.04918032786885246, "betweenness": 0.0023737965131407756, "closeness": 0.30808080808080807}, "position": {"x": -166.2700861546949, "y": -10.673306335772063}}, {"data": {"id": "Cross", "label": "Cross", "degree": 0.01639344262295082, "betweenness": 0.0, "closeness": 0.24897959183673468}, "position": {"x": -494.8309136039637, "y": -24.486055202557395}}, {"data": {"id": "DN16", "label": "DN16", "degree": 0.06557377049180328, "betweenness": 0.004380300179480508, "closeness": 0.23828125}, "position": {"x": 376.4956305082047, "y": 424.44391070982687}}, {"data": {"id": "DN21", "label": "DN21", "degree": 0.09836065573770492, "betweenness": 0.029372536747686685, "closeness": 0.2675438596491228}, "position": {"x": 375.1197503749569, "y": 319.0832334085889}}, {"data": {"id": "DN63", "label": "DN63", "degree": 0.0819672131147541, "betweenness": 0.11823861926938342, "closeness": 0.3652694610778443}, "position": {"x": 146.49527384692297, "y": 64.57469707407763}}, {"data": {"id": "Double", "label": "Double", "degree": 0.09836065573770492, "betweenness": 0.022365737598409235, "closeness": 0.3630952380952381}, "position": {"x": -102.24250375302928, "y": -20.520005968256985}}, {"data": {"id": "Feather", "label": "Feather", "degree": 0.11475409836065574, "betweenness": 0.020894380361593475, "closeness": 0.25206611570247933}, "position": {"x": 372.8440164381966, "y": 370.2886506219814}}, {"data": {"id": "Fish", "label": "Fish", "degree": 0.0819672131147541, "betweenness": 0.016092020911693046, "closeness": 0.3128205128205128}, "position": {"x": -63.23266527289885, "y": -207.3685041990581}}, {"data": {"id": "Five", "label": "Five", "degree": 0.01639344262295082, "betweenness": 0.0, "closeness": 0.24897959183673468}, "position": {"x": -499.59312104364506, "y": -89.16500150157773}}, {"data": {"id": "Fork", "label": "Fork", "degree": 0.01639344262295082, "betweenness": 0.0, "closeness": 0.2687224669603524}, "position": {"x": -296.1887820922244, "y": 20.259632306677535}}, {"data": {"id": "Gallatin", "label": "Gallatin", "degree": 0.13114754098360656, "betweenness": 0.05284632843869151, "closeness": 0.27111111111111114}, "position": {"x": 346.0446909655136, "y": 348.59629987183337}}, {"data": {"id": "Grin", "label": "Grin", "degree": 0.19672131147540983, "betweenness": 0.06197200484885411, "closeness": 0.3765432098765432}, "position": {"x": -173.42308001071692, "y": -157.55490627893641}}, {"data": {"id": "Haecksel", "label": "Haecksel", "degree": 0.11475409836065574, "betweenness": 0.03329222098223321, "closeness": 0.3388888888888889}, "position": {"x": -211.62073805159804, "y": -31.13466959188031}}, {"data": {"id": "Hook", "label": "Hook", "degree": 0.09836065573770492, "betweenness": 0.0033047098620869113, "closeness": 0.32972972972972975}, "position": {"x": -120.87715219460847, "y": -175.24760681341232}}, {"data": {"id": "Jet", "label": "Jet", "degree": 0.14754098360655737, "betweenness": 0.11430016291546972, "closeness": 0.3096446700507614}, "position": {"x": 377.2040380824224, "y": 246.22327055472368}}, {"data": {"id": "Jonah", "label": "Jonah", "degree": 0.11475409836065574, "betweenness": 0.014854899716954898, "closeness": 0.3370165745856354}, "position": {"x": -249.36654134799522, "y": -96.7622530636323}}, {"data": {"id": "Knit", "label": "Knit", "degree": 0.06557377049180328, "betweenness": 0.013314394166853183, "closeness": 0.3160621761658031}, "position": {"x": 212.23770261768902, "y": 75.07116793697116}}, {"data": {"id": "Kringel", "label": "Kringel", "degree": 0.14754098360655737, "betweenness": 0.10264573972090968, "closeness": 0.391025641025641}, "position": {"x": -75.48420765483618, "y": -101.45138046120385}}, {"data": {"id": "MN105", "label": "MN105", "degree": 0.09836065573770492, "betweenness": 0.012700653930162125, "closeness": 0.3333333333333333}, "position": {"x": -280.60291700014164, "y": -136.6179786164807}}, {"data": {"id": "MN23", "label": "MN23", "degree": 0.01639344262295082, "betweenness": 0.0, "closeness": 0.23735408560311283}, "position": {"x": 521.7154276789025, "y": 292.30993655664406}}, {"data": {"id": "MN60", "label": "MN60", "degree": 0.04918032786885246, "betweenness": 0.04218278563875618, "closeness": 0.3333333333333333}, "position": {"x": -217.08030242694232, "y": 40.686868575074506}}, {"data": {"id": "MN83", "label": "MN83", "degree": 0.09836065573770492, "betweenness": 0.007383043489600868, "closeness": 0.3128205128205128}, "position": {"x": -292.5416882462932, "y": -101.60385988308775}}, {"data": {"id": "Mus", "label": "Mus", "degree": 0.04918032786885246, "betweenness": 0.0016441148408361526, "closeness": 0.25523012552301255}, "position": {"x": 412.00277108543975, "y": 152.5403174567542}}, {"data": {"id": "Notch", "label": "Notch", "degree": 0.04918032786885246, "betweenness": 0.00436247723132969, "closeness": 0.2772727272727273}, "position": {"x": 346.5507086821045, "y": 109.22999684124495}}, {"data": {"id": "Number1", "label": "Number1", "degree": 0.0819672131147541, "betweenness": 0.029236860493157983, "closeness": 0.3160621761658031}, "position": {"x": 299.95190851841977, "y": 138.7083756073106}}, {"data": {"id": "Oscar", "label": "Oscar", "degree": 0.0819672131147541, "betweenness": 0.06675695466395656, "closeness": 0.3652694610778443}, "position": {"x": 52.07361789252376, "y": -2.3500782563956677}}, {"data": {"id": "Patchback", "label": "Patchback", "degree": 0.14754098360655737, "betweenness": 0.06552928249649563, "closeness": 0.32275132275132273}, "position": {"x": -263.40052420895665, "y": -184.48337723317627}}, {"data": {"id": "PL", "label": "PL", "degree": 0.0819672131147541, "betweenness": 0.03305046077177225, "closeness": 0.32275132275132273}, "position": {"x": 119.53389540328442, "y": -43.52917335765545}}, {"data": {"id": "Quasi", "label": "Quasi", "degree": 0.01639344262295082, "betweenness": 0.0, "closeness": 0.23735408560311283}, "position": {"x": 526.281307189131, "y": 232.09249317673192}}, {"data": {"id": "Ripplefluke", "label": "Ripplefluke", "degree": 0.04918032786885246, "betweenness": 0.03278688524590164, "closeness": 0.21631205673758866}, "position": {"x": 427.8539529807871, "y": 482.848614676737}}, {"data": {"id": "Scabs", "label": "Scabs", "degree": 0.1639344262295082, "betweenness": 0.057166440117259784, "closeness": 0.3652694610778443}, "position": {"x": -197.58891904291679, "y": -136.2517431361754}}, {"data": {"id": "Shmuddel", "label": "Shmuddel", "degree": 0.0819672131147541, "betweenness": 0.032694759702956426, "closeness": 0.3160621761658031}, "position": {"x": -219.08710163884552, "y": -259.29538005985296}}, {"data": {"id": "SMN5", "label": "SMN5", "degree": 0.01639344262295082, "betweenness": 0.0, "closeness": 0.24497991967871485}, "position": {"x": -408.9083369155237, "y": -268.3875831305961}}, {"data": {"id": "SN100", "label": "SN100", "degree": 0.11475409836065574, "betweenness": 0.24823719602893804, "closeness": 0.4178082191780822}, "position": {"x": -25.121440886172334, "y": 47.238790999457905}}, {"data": {"id": "SN4", "label": "SN4", "degree": 0.18032786885245902, "betweenness": 0.13856978865859435, "closeness": 0.39869281045751637}, "position": {"x": -144.7135396942949, "y": -141.87325398587524}}, {"data": {"id": "SN63", "label": "SN63", "degree": 0.13114754098360656, "betweenness": 0.04535223883584539, "closeness": 0.32972972972972975}, "position": {"x": -104.51746107338043, "y": -232.03168454213915}}, {"data": {"id": "SN89", "label": "SN89", "degree": 0.03278688524590164, "betweenness": 0.070516778539934, "closeness": 0.33516483516483514}, "position": {"x": 114.49118196913105, "y": 219.14929343310692}}, {"data": {"id": "SN9", "label": "SN9", "degree": 0.13114754098360656, "betweenness": 0.1431495183426175, "closeness": 0.40397350993377484}, "position": {"x": -74.40516023510652, "y": -60.490034254038946}}, {"data": {"id": "SN90", "label": "SN90", "degree": 0.0819672131147541, "betweenness": 0.023251600670186175, "closeness": 0.2975609756097561}, "position": {"x": 290.05911821444005, "y": 278.5781879949226}}, {"data": {"id": "SN96", "label": "SN96", "degree": 0.09836065573770492, "betweenness": 0.029157951944837193, "closeness": 0.32972972972972975}, "position": {"x": 1.7372167371877723, "y": -164.47842613295444}}, {"data": {"id": "Stripes", "label": "Stripes", "degree": 0.11475409836065574, "betweenness": 0.06283060442896508, "closeness": 0.3370165745856354}, "position": {"x": -200.0439143302534, "y": -282.05712656026367}}, {"data": {"id": "Thumper", "label": "Thumper", "degree": 0.06557377049180328, "betweenness": 0.012037805849281259, "closeness": 0.3112244897959184}, "position": {"x": -92.00240976990086, "y": -268.6468425906959}}, {"data": {"id": "Topless", "label": "Topless", "degree": 0.18032786885245902, "betweenness": 0.04067044059647018, "closeness": 0.3465909090909091}, "position": {"x": -229.9584941316969, "y": -61.27845903234046}}, {"data": {"id": "TR120", "label": "TR120", "degree": 0.03278688524590164, "betweenness": 0.0030084669428931724, "closeness": 0.25630252100840334}, "position": {"x": -270.02793780436645, "y": -430.79806087310027}}, {"data": {"id": "TR77", "label": "TR77", "degree": 0.09836065573770492, "betweenness": 0.0232014761195089, "closeness": 0.3388888888888889}, "position": {"x": 28.10910640807987, "y": -112.45687542247873}}, {"data": {"id": "TR82", "label": "TR82", "degree": 0.01639344262295082, "betweenness": 0.0, "closeness": 0.23282442748091603}, "position": {"x": 269.0729899846578, "y": 479.3492476492378}}, {"data": {"id": "TR88", "label": "TR88", "degree": 0.03278688524590164, "betweenness": 0.0009289617486338798, "closeness": 0.24696356275303644}, "position": {"x": -312.20953112053905, "y": -394.6871049771626}}, {"data": {"id": "TR99", "label": "TR99", "degree": 0.11475409836065574, "betweenness": 0.03341103492742837, "closeness": 0.3505747126436782}, "position": {"x": -166.18419055803287, "y": -108.28833557094232}}, {"data": {"id": "Trigger", "label": "Trigger", "degree": 0.1639344262295082, "betweenness": 0.08467725475022557, "closeness": 0.32972972972972975}, "position": {"x": -337.7505916879666, "y": -67.74815573539561}}, {"data": {"id": "TSN103", "label": "TSN103", "degree": 0.06557377049180328, "betweenness": 0.0192343448900826, "closeness": 0.34269662921348315}, "position": {"x": -163.5498477788742, "y": -198.20212406386727}}, {"data": {"id": "TSN83", "label": "TSN83", "degree": 0.03278688524590164, "betweenness": 0.0011930783242258653, "closeness": 0.25957446808510637}, "position": {"x": -171.53120491302641, "y": -420.09459749016764}}, {"data": {"id": "Upbang", "label": "Upbang", "degree": 0.11475409836065574, "betweenness": 0.0991216467635194, "closeness": 0.324468085106383}, "position": {"x": 263.78489479915265, "y": 216.807251957394}}, {"data": {"id": "Vau", "label": "Vau", "degree": 0.03278688524590164, "betweenness": 0.0008774695250105086, "closeness": 0.27111111111111114}, "position": {"x": -365.8896550704082, "y": 17.81483183319531}}, {"data": {"id": "Wave", "label": "Wave", "degree": 0.03278688524590164, "betweenness": 0.0001366120218579235, "closeness": 0.21328671328671328}, "position": {"x": 463.4342946251829, "y": 419.5310049413857}}, {"data": {"id": "Web", "label": "Web", "degree": 0.14754098360655737, "betweenness": 0.08420468343495603, "closeness": 0.30198019801980197}, "position": {"x": 284.24354862566054, "y": 333.67550838071367}}, {"data": {"id": "Whitetip", "label": "Whitetip", "degree": 0.01639344262295082, "betweenness": 0.0, "closeness": 0.24897959183673468}, "position": {"x": 7.724194242008324, "y": -364.29873010826424}}, {"data": {"id": "Zap", "label": "Zap", "degree": 0.0819672131147541, "betweenness": 0.020332774690384588, "closeness": 0.34269662921348315}, "position": {"x": -150.97332382488486, "y": 42.85347916156553}}, {"data": {"id": "Zig", "label": "Zig", "degree": 0.01639344262295082, "betweenness": 0.0, "closeness": 0.1783625730994152}, "position": {"x": 505.0968365465761, "y": 600.0}}, {"data": {"id": "Zipfel", "label": "Zipfel", "degree": 0.04918032786885246, "betweenness": 0.014194982613015397, "closeness": 0.30198019801980197}, "position": {"x": -113.76721973972117, "y": -332.402658551478}}], "edges": [{"data": {"id": "Beak__Fish", "source": "Beak", "target": "Fish"}}, {"data": {"id": "Beak__Grin", "source": "Beak", "target": "Grin"}}, {"data": {"id": "Beak__Haecksel", "source": "Beak", "target": "Haecksel"}}, {"data": {"id": "Beak__SN9", "source": "Beak", "target": "SN9"}}, {"data": {"id": "Beak__SN96", "source": "Beak", "target": "SN96"}}, {"data": {"id": "Beak__TR77", "source": "Beak", "target": "TR77"}}, {"data": {"id": "Beescratch__Jet", "source": "Beescratch", "target": "Jet"}}, {"data": {"id": "Beescratch__Knit", "source": "Beescratch", "target": "Knit"}}, {"data": {"id": "Beescratch__Notch", "source": "Beescratch", "target": "Notch"}}, {"data": {"id": "Beescratch__Number1", "source": "Beescratch", "target": "Number1"}}, {"data": {"id": "Beescratch__Oscar", "source": "Beescratch", "target": "Oscar"}}, {"data": {"id": "Beescratch__SN100", "source": "Beescratch", "target": "SN100"}}, {"data": {"id": "Beescratch__SN90", "source": "Beescratch", "target": "SN90"}}, {"data": {"id": "Beescratch__Upbang", "source": "Beescratch", "target": "Upbang"}}, {"data": {"id": "Bumper__Fish", "source": "Bumper", "target": "Fish"}}, {"data": {"id": "Bumper__SN96", "source": "Bumper", "target": "SN96"}}, {"data": {"id": "Bumper__Thumper", "source": "Bumper", "target": "Thumper"}}, {"data": {"id": "Bumper__Zipfel", "source": "Bumper", "target": "Zipfel"}}, {"data": {"id": "CCL__Double", "source": "CCL", "target": "Double"}}, {"data": {"id": "CCL__Grin", "source": "CCL", "target": "Grin"}}, {"data": {"id": "CCL__Zap", "source": "CCL", "target": "Zap"}}, {"data": {"id": "Cross__Trigger", "source": "Cross", "target": "Trigger"}}, {"data": {"id": "DN16__Feather", "source": "DN16", "target": "Feather"}}, {"data": {"id": "DN16__Gallatin", "source": "DN16", "target": "Gallatin"}}, {"data": {"id": "DN16__Wave", "source": "DN16", "target": "Wave"}}, {"data": {"id": "DN16__Web", "source": "DN16", "target": "Web"}}, {"data": {"id": "DN21__Feather", "source": "DN21", "target": "Feather"}}, {"data": {"id": "DN21__Gallatin", "source": "DN21", "target": "Gallatin"}}, {"data": {"id": "DN21__Jet", "source": "DN21", "target": "Jet"}}, {"data": {"id": "DN21__Upbang", "source": "DN21", "target": "Upbang"}}, {"data": {"id": "DN21__Wave", "source": "DN21", "target": "Wave"}}, {"data": {"id": "DN21__Web", "source": "DN21", "target": "Web"}}, {"data": {"id": "DN63__Knit", "source": "DN63", "target": "Knit"}}, {"data": {"id": "DN63__Number1", "source": "DN63", "target": "Number1"}}, {"data": {"id": "DN63__PL", "source": "DN63", "target": "PL"}}, {"data": {"id": "DN63__SN9", "source": "DN63", "target": "SN9"}}, {"data": {"id": "DN63__Upbang", "source": "DN63", "target": "Upbang"}}, {"data": {"id": "Double__Kringel", "source": "Double", "target": "Kringel"}}, {"data": {"id": "Double__Oscar", "source": "Double", "target": "Oscar"}}, {"data": {"id": "Double__SN4", "source": "Double", "target": "SN4"}}, {"data": {"id": "Double__Topless", "source": "Double", "target": "Topless"}}, {"data": {"id": "Double__Zap", "source": "Double", "target": "Zap"}}, {"data": {"id": "Feather__Gallatin", "source": "Feather", "target": "Gallatin"}}, {"data": {"id": "Feather__Jet", "source": "Feather", "target": "Jet"}}, {"data": {"id": "Feather__Ripplefluke", "source": "Feather", "target": "Ripplefluke"}}, {"data": {"id": "Feather__SN90", "source": "Feather", "target": "SN90"}}, {"data": {"id": "Feather__Web", "source": "Feather", "target": "Web"}}, {"data": {"id": "Fish__Patchback", "source": "Fish", "target": "Patchback"}}, {"data": {"id": "Fish__SN96", "source": "Fish", "target": "SN96"}}, {"data": {"id": "Fish__TR77", "source": "Fish", "target": "TR77"}}, {"data": {"id": "Five__Trigger", "source": "Five", "target": "Trigger"}}, {"data": {"id": "Fork__Scabs", "source": "Fork", "target": "Scabs"}}, {"data": {"id": "Gallatin__Jet", "source": "Gallatin", "target": "Jet"}}, {"data": {"id": "Gallatin__Ripplefluke", "source": "Gallatin", "target": "Ripplefluke"}}, {"data": {"id": "Gallatin__SN90", "source": "Gallatin", "target": "SN90"}}, {"data": {"id": "Gallatin__Upbang", "source": "Gallatin", "target": "Upbang"}}, {"data": {"id": "Gallatin__Web", "source": "Gallatin", "target": "Web"}}, {"data": {"id": "Grin__Hook", "source": "Grin", "target": "Hook"}}, {"data": {"id": "Grin__MN83", "source": "Grin", "target": "MN83"}}, {"data": {"id": "Grin__Scabs", "source": "Grin", "target": "Scabs"}}, {"data": {"id": "Grin__Shmuddel", "source": "Grin", "target": "Shmuddel"}}, {"data": {"id": "Grin__SN4", "source": "Grin", "target": "SN4"}}, {"data": {"id": "Grin__SN63", "source": "Grin", "target": "SN63"}}, {"data": {"id": "Grin__SN9", "source": "Grin", "target": "SN9"}}, {"data": {"id": "Grin__Stripes", "source": "Grin", "target": "Stripes"}}, {"data": {"id": "Grin__TR99", "source": "Grin", "target": "TR99"}}, {"data": {"id": "Grin__TSN103", "source": "Grin", "target": "TSN103"}}, {"data": {"id": "Haecksel__Jonah", "source": "Haecksel", "target": "Jonah"}}, {"data": {"id": "Haecksel__MN83", "source": "Haecksel", "target": "MN83"}}, {"data": {"id": "Haecksel__SN9", "source": "Haecksel", "target": "SN9"}}, {"data": {"id": "Haecksel__Topless", "source": "Haecksel", "target": "Topless"}}, {"data": {"id": "Haecksel__Vau", "source": "Haecksel", "target": "Vau"}}, {"data": {"id": "Haecksel__Zap", "source": "Haecksel", "target": "Zap"}}, {"data": {"id": "Hook__Kringel", "source": "Hook", "target": "Kringel"}}, {"data": {"id": "Hook__Scabs", "source": "Hook", "target": "Scabs"}}, {"data": {"id": "Hook__SN4", "source": "Hook", "target": "SN4"}}, {"data": {"id": "Hook__SN63", "source": "Hook", "target": "SN63"}}, {"data": {"id": "Hook__TR99", "source": "Hook", "target": "TR99"}}, {"data": {"id": "Jet__MN23", "source": "Jet", "target": "MN23"}}, {"data": {"id": "Jet__Mus", "source": "Jet", "target": "Mus"}}, {"data": {"id": "Jet__Number1", "source": "Jet", "target": "Number1"}}, {"data": {"id": "Jet__Quasi", "source": "Jet", "target": "Quasi"}}, {"data": {"id": "Jet__Web", "source": "Jet", "target": "Web"}}, {"data": {"id": "Jonah__Kringel", "source": "Jonah", "target": "Kringel"}}, {"data": {"id": "Jonah__MN105", "source": "Jonah", "target": "MN105"}}, {"data": {"id": "Jonah__MN83", "source": "Jonah", "target": "MN83"}}, {"data": {"id": "Jonah__Patchback", "source": "Jonah", "target": "Patchback"}}, {"data": {"id": "Jonah__Topless", "source": "Jonah", "target": "Topless"}}, {"data": {"id": "Jonah__Trigger", "source": "Jonah", "target": "Trigger"}}, {"data": {"id": "Knit__PL", "source": "Knit", "target": "PL"}}, {"data": {"id": "Knit__Upbang", "source": "Knit", "target": "Upbang"}}, {"data": {"id": "Kringel__Oscar", "source": "Kringel", "target": "Oscar"}}, {"data": {"id": "Kringel__SN100", "source": "Kringel", "target": "SN100"}}, {"data": {"id": "Kringel__SN63", "source": "Kringel", "target": "SN63"}}, {"data": {"id": "Kringel__Thumper", "source": "Kringel", "target": "Thumper"}}, {"data": {"id": "Kringel__TR77", "source": "Kringel", "target": "TR77"}}, {"data": {"id": "Kringel__TR99", "source": "Kringel", "target": "TR99"}}, {"data": {"id": "MN105__Patchback", "source": "MN105", "target": "Patchback"}}, {"data": {"id": "MN105__Scabs", "source": "MN105", "target": "Scabs"}}, {"data": {"id": "MN105__SN4", "source": "MN105", "target": "SN4"}}, {"data": {"id": "MN105__Topless", "source": "MN105", "target": "Topless"}}, {"data": {"id": "MN105__Trigger", "source": "MN105", "target": "Trigger"}}, {"data": {"id": "MN60__SN100", "source": "MN60", "target": "SN100"}}, {"data": {"id": "MN60__Topless", "source": "MN60", "target": "Topless"}}, {"data": {"id": "MN60__Trigger", "source": "MN60", "target": "Trigger"}}, {"data": {"id": "MN83__Patchback", "source": "MN83", "target": "Patchback"}}, {"data": {"id": "MN83__Topless", "source": "MN83", "target": "Topless"}}, {"data": {"id": "MN83__Trigger", "source": "MN83", "target": "Trigger"}}, {"data": {"id": "Mus__Notch", "source": "Mus", "target": "Notch"}}, {"data": {"id": "Mus__Number1", "source": "Mus", "target": "Number1"}}, {"data": {"id": "Notch__Number1", "source": "Notch", "target": "Number1"}}, {"data": {"id": "Oscar__PL", "source": "Oscar", "target": "PL"}}, {"data": {"id": "Oscar__TR77", "source": "Oscar", "target": "TR77"}}, {"data": {"id": "Patchback__SMN5", "source": "Patchback", "target": "SMN5"}}, {"data": {"id": "Patchback__Stripes", "source": "Patchback", "target": "Stripes"}}, {"data": {"id": "Patchback__Topless", "source": "Patchback", "target": "Topless"}}, {"data": {"id": "Patchback__Trigger", "source": "Patchback", "target": "Trigger"}}, {"data": {"id": "Patchback__TSN103", "source": "Patchback", "target": "TSN103"}}, {"data": {"id": "PL__SN96", "source": "PL", "target": "SN96"}}, {"data": {"id": "PL__TR77", "source": "PL", "target": "TR77"}}, {"data": {"id": "Ripplefluke__Zig", "source": "Ripplefluke", "target": "Zig"}}, {"data": {"id": "Scabs__Shmuddel", "source": "Scabs", "target": "Shmuddel"}}, {"data": {"id": "Scabs__SN4", "source": "Scabs", "target": "SN4"}}, {"data": {"id": "Scabs__SN63", "source": "Scabs", "target": "SN63"}}, {"data": {"id": "Scabs__SN9", "source": "Scabs", "target": "SN9"}}, {"data": {"id": "Scabs__Stripes", "source": "Scabs", "target": "Stripes"}}, {"data": {"id": "Scabs__TR99", "source": "Scabs", "target": "TR99"}}, {"data": {"id": "Shmuddel__SN4", "source": "Shmuddel", "target": "SN4"}}, {"data": {"id": "Shmuddel__Thumper", "source": "Shmuddel", "target": "Thumper"}}, {"data": {"id": "Shmuddel__TR88", "source": "Shmuddel", "target": "TR88"}}, {"data": {"id": "SN100__SN4", "source": "SN100", "target": "SN4"}}, {"data": {"id": "SN100__SN89", "source": "SN100", "target": "SN89"}}, {"data": {"id": "SN100__SN9", "source": "SN100", "target": "SN9"}}, {"data": {"id": "SN100__Zap", "source": "SN100", "target": "Zap"}}, {"data": {"id": "SN4__SN9", "source": "SN4", "target": "SN9"}}, {"data": {"id": "SN4__Stripes", "source": "SN4", "target": "Stripes"}}, {"data": {"id": "SN4__Topless", "source": "SN4", "target": "Topless"}}, {"data": {"id": "SN4__Zipfel", "source": "SN4", "target": "Zipfel"}}, {"data": {"id": "SN63__Stripes", "source": "SN63", "target": "Stripes"}}, {"data": {"id": "SN63__Thumper", "source": "SN63", "target": "Thumper"}}, {"data": {"id": "SN63__TSN103", "source": "SN63", "target": "TSN103"}}, {"data": {"id": "SN63__Whitetip", "source": "SN63", "target": "Whitetip"}}, {"data": {"id": "SN89__Web", "source": "SN89", "target": "Web"}}, {"data": {"id": "SN9__TSN103", "source": "SN9", "target": "TSN103"}}, {"data": {"id": "SN90__Upbang", "source": "SN90", "target": "Upbang"}}, {"data": {"id": "SN90__Web", "source": "SN90", "target": "Web"}}, {"data": {"id": "SN96__TR77", "source": "SN96", "target": "TR77"}}, {"data": {"id": "SN96__TR99", "source": "SN96", "target": "TR99"}}, {"data": {"id": "Stripes__TR120", "source": "Stripes", "target": "TR120"}}, {"data": {"id": "Stripes__TSN83", "source": "Stripes", "target": "TSN83"}}, {"data": {"id": "Topless__TR99", "source": "Topless", "target": "TR99"}}, {"data": {"id": "Topless__Trigger", "source": "Topless", "target": "Trigger"}}, {"data": {"id": "Topless__Zap", "source": "Topless", "target": "Zap"}}, {"data": {"id": "TR120__TR88", "source": "TR120", "target": "TR88"}}, {"data": {"id": "TR82__Web", "source": "TR82", "target": "Web"}}, {"data": {"id": "TR99__Trigger", "source": "TR99", "target": "Trigger"}}, {"data": {"id": "Trigger__Vau", "source": "Trigger", "target": "Vau"}}, {"data": {"id": "TSN83__Zipfel", "source": "TSN83", "target": "Zipfel"}}, {"data": {"id": "Upbang__Web", "source": "Upbang", "target": "Web"}}], "stats": {"degree": {"min": 0.01639344262295082, "max": 0.19672131147540983}, "betweenness": {"min": 0.0, "max": 0.24823719602893804}, "closeness": {"min": 0.1783625730994152, "max": 0.4178082191780822}}};
+
+  function colorFor(value, min, max, intensity=1.0) {
+    const t = (value - min) / (max - min + 1e-12);
+    const c = d3.interpolateViridis(1 - t);
+    const neutral = "#dddddd";
+    return d3.interpolateRgb(neutral, c)(intensity);
+  }
+
+  function mapNodes(cy, metric, sizeScale, colorPct) {
+    const min = data.stats[metric].min;
+    const max = data.stats[metric].max;
+    const intensity = colorPct / 100.0;
+    cy.nodes().forEach(n => {
+      const v = n.data(metric);
+      const t = (v - min) / (max - min + 1e-12);
+      const size = 8 + t * sizeScale;
+      n.style({
+        "width": size,
+        "height": size,
+        "background-color": colorFor(v, min, max, intensity),
+        "label": n.data("label"),
+        "color": "#111"
+      });
+    });
+    document.getElementById("minLabel").textContent = min.toExponential(2);
+    document.getElementById("maxLabel").textContent = max.toExponential(2);
+  }
+
+  function updateLegend(metric, colorPct) {
+    const min = data.stats[metric].min;
+    const max = data.stats[metric].max;
+    const intensity = colorPct / 100.0;
+    const steps = 20;
+    let stops = [];
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const v = min + t * (max - min);
+      const col = colorFor(v, min, max, intensity);
+      stops.push({ t, col });
+    }
+    const grad = stops.map(s => ' ' + s.col + ' ' + Math.round(s.t * 100) + '%').join(',');
+    document.getElementById("legend").style.background = 'linear-gradient(90deg,' + grad + ')';
+  }
+
+  const cy = cytoscape({
+    container: document.getElementById('cy'),
+    elements: { nodes: data.nodes, edges: data.edges },
+    layout: { name: 'preset' },
+    style: [
+      {
+        selector: 'node',
+        style: {
+          'background-color': '#888',
+          'label': 'data(label)',
+          'font-size': 10,
+          'text-outline-width': 1,
+          'text-outline-color': '#fff'
+        }
+      },
+      {
+        selector: 'edge',
+        style: {
+          'width': 1,
+          'line-color': '#ccc',
+          'curve-style': 'haystack'
+        }
+      }
+    ]
+  });
+
+  cy.on('tap', 'node', evt => {
+    const d = evt.target.data();
+    alert("Node: " + d.label + "\nDegree: " + d.degree.toFixed(4) +
+          "\nBetweenness: " + d.betweenness.toExponential(3) +
+          "\nCloseness: " + d.closeness.toFixed(4));
+  });
+
+  const metricSel = document.getElementById('metric');
+  const sizeSlider = document.getElementById('sizeScale');
+  const colorSlider = document.getElementById('colorIntensity');
+  document.getElementById('nNodes').textContent = cy.nodes().length;
+  document.getElementById('nEdges').textContent = cy.edges().length;
+
+  function refresh() {
+    mapNodes(cy, metricSel.value, Number(sizeSlider.value), Number(colorSlider.value));
+    updateLegend(metricSel.value, Number(colorSlider.value));
+  }
+
+  metricSel.addEventListener('change', refresh);
+  sizeSlider.addEventListener('input', refresh);
+  colorSlider.addEventListener('input', refresh);
+  refresh();
+</script>
+</body>
+</html>
